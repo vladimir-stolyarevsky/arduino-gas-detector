@@ -4,9 +4,9 @@ const int MQ9_A0 = 0;
 const int BUTTON_PIN = 7;
   
 const int DISP_STATE_CCS811 = 1;
-const int DISP_STATE_MQ9 = 2;
-const int DISP_STATE_AM2320 = 3;
-const int DISP_STATE_ALERT = 4;
+//const int DISP_STATE_MQ9 = 2;
+const int DISP_STATE_AM2320 = 2;
+const int DISP_STATE_ALERT = 0;
 const int DISP_STATE_ERROR = -1;
 
 bool GetCCS811SensorData(uint16_t* eCO2,uint16_t* tvoc,uint16_t* baseLine);
@@ -20,8 +20,9 @@ void setup(void)
     delay(500);
     Serial.println("Starting..."); 
     SetupOLED();
+    displayMessage("Initializing","Please wait");
     SetupCCS811(false);
-    SetupMQ9(60);
+    //SetupMQ9(3);
 
     //PIN MODES              
     pinMode(MQ9_DO, INPUT);
@@ -29,6 +30,7 @@ void setup(void)
     pinMode(BUTTON_PIN, INPUT);
     //Temp/Humid sensor
     am2320.begin();
+    Serial.println("Setup done");  
 }
 
  
@@ -37,7 +39,7 @@ unsigned long deltaTime = 0,
               prevLoopMillis = 0,
               thisLoopMillis = 0;
 int alert = 0;
-int displayState = DISP_STATE_MQ9;
+int displayState = DISP_STATE_CCS811;
 
 uint16_t eCO2 = 0,
          tvoc = 0, 
@@ -53,36 +55,45 @@ float temp = 0,
       hum = 0;
 
 int prevButtonState = HIGH;
+
 void loop() {  
 
+    Serial.println(millis()); 
     thisLoopMillis = millis();
     uptimeSec = thisLoopMillis/1000;
     deltaTime += thisLoopMillis - prevLoopMillis;
     unsigned long deltaTimeSec = deltaTime/1000;
 
     
-    getMQ9Data(&sensor_volt,&RS_gas,&ratio,&co_ppm,&r0);
+    //getMQ9Data(&sensor_volt,&RS_gas,&ratio,&co_ppm,&r0);
+   
     if(!getCCS811SensorData(&eCO2,&tvoc,&baseLine))
       displayState = DISP_STATE_ERROR;
     getAM2320Data(&hum,&temp);
-    
-    checkAlerts();
 
-     
+  
+    checkAlerts(); 
     toggleBuzz(alert);
+    
     Serial.println(String(deltaTimeSec) + " sec"); 
     Serial.println(String(alert,BIN) + " alert");  
-
+    Serial.println("Display state: " + String(displayState));
     int buttonState = digitalRead(BUTTON_PIN);
+    Serial.println("btn state:");
+    Serial.println(buttonState);
     if(prevButtonState == LOW && buttonState == HIGH){      
-      if(displayState>=3||displayState<=0)
+      if(displayState >= 3 || displayState <= 0)
         displayState = 1;
       else{
         displayState++; 
       }  
     }     
-    else if(alert)
-      displayState = DISP_STATE_ALERT;      
+    else if(alert){
+      displayState = DISP_STATE_ALERT;
+    }
+    else{
+      displayState = DISP_STATE_CCS811;
+      }      
     /*else if(deltaTimeSec < 10)
       displayState = DISP_STATE_CCS811;
     else if(deltaTimeSec<20)
@@ -101,15 +112,15 @@ void loop() {
     prevLoopMillis = thisLoopMillis;    
     prevButtonState = buttonState;
 }
-
+ 
 void displayData(){
   switch(displayState){
    case(DISP_STATE_CCS811):
       displayCCS811Data(eCO2,tvoc,baseLine);
       break;
-   case(DISP_STATE_MQ9):
-      displayMQ9Data(sensor_volt,RS_gas,ratio,co_ppm,r0);
-      break;
+//   case(DISP_STATE_MQ9):
+//      displayMQ9Data(sensor_volt,RS_gas,ratio,co_ppm,r0);
+//      break;
    case(DISP_STATE_AM2320):
       displayAM2320Data(hum,temp);
       break;
@@ -142,18 +153,26 @@ String getAlertMessage(){
 
 
 void checkAlerts(){
-  if(checkForCOAlert())
+  /*if(checkForCOAlert())
     alert |= 1 << 0;
+    */
     
-  if(tvoc > 1000)
-    alert |=1<<1;
+  if(tvoc > 1000){
+    alert |= 1<<1;
+    Serial.println("tvoc alert");
+    Serial.println(tvoc);
+  }
     
-  if(eCO2>3000)
-    alert |= 1<<2; 
+  if(eCO2>3000){
+    alert |= 1<<2;
+    Serial.println("eCO2 alert");
+    Serial.println(eCO2);
+  } 
     
   if(alert){ 
-    if((alert & (1<<0)) > 0 && !checkForCOAlert())
-      alert ^= 1<<0;      
+    /*if((alert & (1<<0)) > 0 && !checkForCOAlert())
+      alert ^= 1<<0;
+      */
     if((alert & (1 << 2)) > 0)
       if(eCO2<3000)
         alert ^=1<<2; 

@@ -5,7 +5,7 @@ extern uint8_t TinyFont[];
 
 
 
-void SetupOLED(){
+void SetupOLED(){ 
     myOLED.begin(SSD1306_128X32);
     delay(500);   
  }

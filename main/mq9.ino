@@ -45,7 +45,7 @@ void getR0(int calibrateForSeconds){
    float sensor_volt;  
    float RS_air; //  Rs in clean air 
    R0 = 0;  // R0 in 1000 ppm LPG 
-   float sensorValue; 
+   float sensorValue = 0; 
   //Average   
   for(int x = 0 ; x < 100 ; x++) 
    { 
@@ -64,15 +64,19 @@ void getR0(int calibrateForSeconds){
    Serial.print("Abs diff = ");
    Serial.println(abs(prevR0-R0));
    unsigned long calibratingForMs = millis() - calibrationStartMs; 
-   displayMessage("Calibr. MQ9 " + String(calibrateForSeconds - calibratingForMs/1000),"dR0: " + String(abs(prevR0-R0)));   
+   //displayMessage("Calibr. MQ9 " + String(calibrateForSeconds - calibratingForMs/1000),"dR0: " + String(abs(prevR0-R0)));   
    if((abs(prevR0-R0) < 0.001) && (calibratingForMs > (calibrateForSeconds*1000L)))
       break; 
    else
       prevR0 = R0; 
    delay(1000); 
  }
+
+ Serial.print("write to eeprom = "); 
+   Serial.println(R0);
    writeFloatToEEPROM(3,R0);
   _R0 = R0;
+   Serial.print("mq9 done"); 
 }
 
 bool checkForCOAlert(){

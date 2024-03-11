@@ -9,6 +9,7 @@ bool useRecordedBaseLine;
 
 
 void SetupCCS811(bool _useRecordedBaseLine){
+    Serial.println("Starting CCS811..."); 
     useRecordedBaseLine = _useRecordedBaseLine;
       /*Wait for the chip to be initialized completely, and then exit*/ 
 
@@ -24,8 +25,8 @@ void SetupCCS811(bool _useRecordedBaseLine){
     }
       
     int code = CCS811.begin();
-    while(code != 0){
-
+    while(code != 0){ 
+        Serial.println(code);
         delay(1000);
         code = CCS811.begin();
     }
@@ -43,8 +44,8 @@ bool getCCS811SensorData(uint16_t* eCO2,uint16_t* tvoc,uint16_t* baseLine){
           
   } 
   else {
-      *eCO2 = -1;
-      *tvoc = -1;
+      *eCO2 = 0;
+      *tvoc = 0;
       *baseLine = -1; 
       return false;
   }
